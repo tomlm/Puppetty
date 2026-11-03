@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Puppetty.Testing</RootNamespace>
+    <Description>Auto-retrying Expect() assertions for Puppetty terminals. Works with xUnit, NUnit and MSTest.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Puppetty\Puppetty.csproj" />
+  </ItemGroup>
+
+</Project>
