@@ -11,13 +11,15 @@ public sealed class Screen
     private readonly Cell[,] _cells;
     private readonly Row[] _rows;
 
-    private Screen(Cell[,] cells, Row[] rows, int cursorRow, int cursorCol, bool cursorVisible, bool alternateScreen)
+    private Screen(Cell[,] cells, Row[] rows, int cursorRow, int cursorCol, bool cursorVisible, bool alternateScreen, TerminalModes modes, string title)
     {
         _cells = cells;
         _rows = rows;
         Cursor = (cursorRow, cursorCol);
         CursorVisible = cursorVisible;
         IsAlternateScreen = alternateScreen;
+        Modes = modes;
+        Title = title;
     }
 
     /// <summary>Width in columns.</summary>
@@ -34,6 +36,21 @@ public sealed class Screen
 
     /// <summary>Whether the alternate screen (full-screen apps) is active.</summary>
     public bool IsAlternateScreen { get; }
+
+    /// <summary>Input-relevant modes the application had set (mouse, bracketed paste, cursor keys, ...).</summary>
+    public TerminalModes Modes { get; }
+
+    /// <summary>The window title the application set (OSC 0/2), or "".</summary>
+    public string Title { get; }
+
+    /// <summary>Renders the screen in <paramref name="format"/>. See <see cref="ScreenFormat"/>.</summary>
+    public string Render(ScreenFormat format) => format switch
+    {
+        ScreenFormat.Text => GetText(),
+        ScreenFormat.Annotated => ScreenFormatter.Annotated(this),
+        ScreenFormat.Ansi => ScreenFormatter.Ansi(this),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
+    };
 
     /// <summary>The cell at a zero-based position.</summary>
     public Cell this[int row, int col] => _cells[row, col];
@@ -121,7 +138,8 @@ public sealed class Screen
             var padded = sb.ToString();
             rowText[r] = new Row(padded, padded.TrimEnd(' '), columns.ToArray());
         }
-        return new Screen(cells, rowText, buffer.Y, buffer.X, emulator.CursorVisible, emulator.IsAlternateBufferActive);
+        return new Screen(cells, rowText, buffer.Y, buffer.X, emulator.CursorVisible, emulator.IsAlternateBufferActive,
+            TerminalModes.Capture(emulator), emulator.Title ?? "");
     }
 
     private static readonly Cell Blank = new(" ", 1, Color.Default, Color.Default, CellAttributes.None);

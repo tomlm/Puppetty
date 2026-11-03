@@ -1,4 +1,5 @@
 using XTerm.Input;
+using KeyEvent = XTerm.Options.KeyEvent;
 using Emulator = XTerm.Terminal;
 using XKey = XTerm.Input.Key;
 using XMods = XTerm.Input.KeyModifiers;
@@ -24,6 +25,12 @@ internal static class KeyEncoder
     /// <param name="conPty">True when the far side is Windows ConPTY.</param>
     public static string Encode(KeyChord chord, Emulator emulator, bool conPty)
     {
+        // An application that negotiated the Kitty keyboard protocol reads CSI-u, not legacy VT, and
+        // OpenConsole relays CSI-u input to it unchanged, so this comes before win32-input-mode.
+        // A null result means the protocol says this press sends nothing.
+        if (emulator.KittyKeyboardActive)
+            return emulator.GenerateKittyKeyInput(ToKeyEvent(chord)) ?? string.Empty;
+
         if (conPty && UseWin32Input(chord, emulator))
         {
             var win32 = EncodeWin32(chord);
@@ -40,8 +47,7 @@ internal static class KeyEncoder
     }
 
     private static bool UseWin32Input(KeyChord chord, Emulator emulator) =>
-        emulator.Win32InputMode
-        || (chord.Key == Key.Escape && chord.Modifiers == KeyModifiers.None && !emulator.KittyKeyboardActive);
+        emulator.Win32InputMode || (chord.Key == Key.Escape && chord.Modifiers == KeyModifiers.None);
 
     /// <summary>Key down + key up as win32-input-mode sequences, or "" if the key has no virtual key code.</summary>
     internal static string EncodeWin32(KeyChord chord)
@@ -93,6 +99,44 @@ internal static class KeyEncoder
         if (vk == 0)
             return string.Empty;
         return Win32InputGenerator.GenerateKeyPress(vk, Win32InputGenerator.GetScanCode(vk), unicode, state);
+    }
+
+    /// <summary>A browser-style key event (DOM <c>key</c> / <c>code</c> names), as the Kitty encoder expects.</summary>
+    private static KeyEvent ToKeyEvent(KeyChord chord)
+    {
+        var shift = chord.Modifiers.HasFlag(KeyModifiers.Shift);
+        string keyName, code;
+        if (chord.Key is { } key)
+        {
+            (keyName, code) = key switch
+            {
+                Key.Space => (" ", "Space"),
+                Key.Up => ("ArrowUp", "ArrowUp"),
+                Key.Down => ("ArrowDown", "ArrowDown"),
+                Key.Left => ("ArrowLeft", "ArrowLeft"),
+                Key.Right => ("ArrowRight", "ArrowRight"),
+                _ => (key.ToString(), key.ToString()),
+            };
+        }
+        else
+        {
+            var c = chord.Character!.Value;
+            if (char.IsAsciiLetterUpper(c))
+                shift = true;
+            keyName = (shift && char.IsAsciiLetter(c) ? char.ToUpperInvariant(c) : c).ToString();
+            code = char.IsAsciiLetter(c) ? $"Key{char.ToUpperInvariant(c)}"
+                : char.IsAsciiDigit(c) ? $"Digit{c}"
+                : "";
+        }
+
+        return new KeyEvent
+        {
+            Key = keyName,
+            Code = code,
+            CtrlKey = chord.Modifiers.HasFlag(KeyModifiers.Control),
+            AltKey = chord.Modifiers.HasFlag(KeyModifiers.Alt),
+            ShiftKey = shift,
+        };
     }
 
     private static XMods ToXterm(KeyModifiers modifiers) => (XMods)(int)modifiers;

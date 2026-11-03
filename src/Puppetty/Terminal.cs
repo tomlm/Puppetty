@@ -190,6 +190,111 @@ public sealed class Terminal : IAsyncDisposable
     }
 
     /// <summary>
+    /// Pastes <paramref name="text"/> as a terminal would: wrapped in bracketed-paste markers when the
+    /// application enabled mode 2004, then waits for the screen to settle.
+    /// </summary>
+    public async Task PasteAsync(string text, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        string bytes;
+        lock (_gate)
+        {
+            // Paste emits through DataReceived, which collects into _replies.
+            _emulator.Paste(text);
+            bytes = TakeReplies() ?? "";
+        }
+        await SendInputAsync(bytes, bareEscape: false, cancellationToken).ConfigureAwait(false);
+        await SettleAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Clicks at a zero-based cell (press and release), encoded for the application's mouse mode,
+    /// then waits for the screen to settle.
+    /// </summary>
+    /// <returns>False, and sends nothing, when the application has not enabled mouse reporting.</returns>
+    public async Task<bool> ClickAsync(int row, int col, MouseButton button = MouseButton.Left, KeyModifiers modifiers = KeyModifiers.None, CancellationToken cancellationToken = default)
+    {
+        var xbutton = button switch
+        {
+            MouseButton.Middle => XTerm.Input.MouseButton.Middle,
+            MouseButton.Right => XTerm.Input.MouseButton.Right,
+            _ => XTerm.Input.MouseButton.Left,
+        };
+        string bytes;
+        lock (_gate)
+        {
+            var mods = (XTerm.Input.KeyModifiers)(int)modifiers;
+            bytes = _emulator.GenerateMouseEvent(xbutton, col, row, XTerm.Input.MouseEventType.Down, mods)
+                  + _emulator.GenerateMouseEvent(xbutton, col, row, XTerm.Input.MouseEventType.Up, mods);
+        }
+        if (bytes.Length == 0)
+            return false;
+        await SendInputAsync(bytes, bareEscape: false, cancellationToken).ConfigureAwait(false);
+        await SettleAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>
+    /// Turns the mouse wheel at a zero-based cell: positive <paramref name="clicks"/> scroll down,
+    /// negative scroll up. Then waits for the screen to settle.
+    /// </summary>
+    /// <returns>False, and sends nothing, when the application has not enabled mouse reporting.</returns>
+    public async Task<bool> ScrollWheelAsync(int row, int col, int clicks, CancellationToken cancellationToken = default)
+    {
+        if (clicks == 0)
+            return true;
+        var (button, type) = clicks > 0
+            ? (XTerm.Input.MouseButton.WheelDown, XTerm.Input.MouseEventType.WheelDown)
+            : (XTerm.Input.MouseButton.WheelUp, XTerm.Input.MouseEventType.WheelUp);
+        string bytes;
+        lock (_gate)
+            bytes = string.Concat(Enumerable.Repeat(_emulator.GenerateMouseEvent(button, col, row, type), Math.Abs(clicks)));
+        if (bytes.Length == 0)
+            return false;
+        await SendInputAsync(bytes, bareEscape: false, cancellationToken).ConfigureAwait(false);
+        await SettleAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    /// <summary>Resizes the terminal; the application is told through the PTY (SIGWINCH). Then waits for the screen to settle.</summary>
+    public async Task ResizeAsync(int cols, int rows, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(cols);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
+        string? replies;
+        lock (_gate)
+        {
+            _emulator.Resize(cols, rows);
+            // Apps that asked for in-band resize reports (mode 2048) get one through DataReceived.
+            replies = TakeReplies();
+            _quiet.OnInput(_time.GetUtcNow(), bareEscape: false);
+        }
+        _pty.Resize(cols, rows);
+        if (replies is not null)
+            await WriteAsync(replies, cancellationToken).ConfigureAwait(false);
+        await SettleAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Lines that have scrolled off the top of the normal screen, oldest first, trailing spaces
+    /// trimmed. Empty while the alternate screen is active (it has no scrollback).
+    /// </summary>
+    /// <param name="maxLines">Return at most this many of the most recent lines.</param>
+    public IReadOnlyList<string> GetScrollback(int maxLines = int.MaxValue)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(maxLines);
+        lock (_gate)
+        {
+            var buffer = _emulator.Buffer;
+            var count = Math.Min(buffer.YBase, maxLines);
+            var lines = new string[count];
+            for (var i = 0; i < count; i++)
+                lines[i] = buffer.GetLine(buffer.YBase - count + i)?.TranslateToString(trimRight: true) ?? "";
+            return lines;
+        }
+    }
+
+    /// <summary>
     /// Waits until the screen settles: no synchronized-output block is open and no output has arrived
     /// for <see cref="SettleOptions.QuietPeriod"/>.
     /// </summary>
@@ -309,11 +414,7 @@ public sealed class Terminal : IAsyncDisposable
                 {
                     _emulator.Write(buffer.AsSpan(0, read));
                     _quiet.OnOutput(_time.GetUtcNow());
-                    if (_replies.Count > 0)
-                    {
-                        replies = string.Concat(_replies);
-                        _replies.Clear();
-                    }
+                    replies = TakeReplies();
                     changed = _changed;
                     _changed = NewSignal();
                 }
@@ -337,6 +438,16 @@ public sealed class Terminal : IAsyncDisposable
             }
             changed.TrySetResult();
         }
+    }
+
+    /// <summary>Everything the emulator emitted toward the application since the last call. Caller holds _gate.</summary>
+    private string? TakeReplies()
+    {
+        if (_replies.Count == 0)
+            return null;
+        var replies = string.Concat(_replies);
+        _replies.Clear();
+        return replies;
     }
 
     private async Task SendInputAsync(string text, bool bareEscape, CancellationToken cancellationToken)

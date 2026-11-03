@@ -48,6 +48,16 @@ public abstract class Locator
         return Resolve(screen)[0];
     }
 
+    /// <summary>
+    /// Waits for the locator to match, then clicks the first cell of the first match.
+    /// </summary>
+    /// <returns>False when the application has not enabled mouse reporting (nothing was sent).</returns>
+    public async Task<bool> ClickAsync(MouseButton button = MouseButton.Left, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
+    {
+        var match = await WaitForAsync(timeout, cancellationToken).ConfigureAwait(false);
+        return await Terminal.ClickAsync(match.Row, match.Col, button, KeyModifiers.None, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <inheritdoc />
     public override string ToString() => Description;
 }
