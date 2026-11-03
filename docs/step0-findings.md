@@ -211,9 +211,16 @@ static  Win32InputGenerator.GenerateKeyEvent(...)                    // win32-in
 - Default implementation is the **bundled out-of-band ConPTY** (OpenConsole); falls back to
   in-box kernel32 ConPTY if the binaries are missing. The choice is process-wide only
   (`PORTAPTY_CONPTY=inbox|oob`).
-- **Passthrough mode is not available:** `CreatePseudoConsole` is called with
-  `dwFlags = 0` (`Windows/PseudoConsole.cs:366`). As a result conhost consumes or redraws
-  APC (Kitty graphics), XTGETTCAP, DECRQSS, OSC 10/11/52, and blocks Kitty keyboard negotiation.
+- **Out-of-band vs in-box matters more than passthrough.** The bundled OpenConsole relays
+  Kitty graphics APC, XTGETTCAP, DECRQSS and OSC 10/11/52 (Iciclecreek.Avalonia.Terminal runs
+  Kitty graphics through it). Only the **silent fallback to in-box conhost** consumes them
+  (measured; see `Porta.Pty/src/Porta.Pty/build/Porta.Pty.ProjectReferenceHost.targets:17-21`).
+  The fallback happens when `conpty.dll` cannot find `OpenConsole.exe` beside itself, e.g. a
+  portable project-reference layout. The spec's "ConPTY drops APC / blocks Kitty keyboard"
+  describes in-box conhost. Puppetty should check `PtyProvider.PseudoConsoleImplementation == "oob"`
+  at launch and warn (or fail, via an option) on `"inbox"` / `"oob-no-host"`.
+- Passthrough flags are hard-coded to 0 (`Windows/PseudoConsole.cs:366`); not needed while
+  OOB is in use. Kitty keyboard through OOB is still to be verified in M1/M5.
 - **Startup DA1:** Porta.Pty pre-answers OpenConsole's DA1 and strips the first `ESC[c` from
   output. Puppetty must not answer it again.
 - ConPTY emits `ESC[?9001h` (win32-input-mode), `ESC[?1004h`, `ESC[6n`, `ESC[1t` at startup.
@@ -225,8 +232,8 @@ static  Win32InputGenerator.GenerateKeyEvent(...)                    // win32-in
 ## 6. Proposed upstream changes (proposals only; not made)
 
 Porta.Pty:
-1. `PtyOptions.ConPtyFlags` (passthrough, inherit cursor) passed to `CreatePseudoConsole`,
-   plus a per-spawn choice of in-box vs out-of-band ConPTY.
+1. (Low priority) `PtyOptions.ConPtyFlags` passed to `CreatePseudoConsole`, plus a per-spawn
+   choice of in-box vs out-of-band ConPTY. Not needed for Kitty support while OOB is active.
 2. Unix: expose the terminating signal (e.g. `ExitSignal`) instead of reporting exit code 0.
 3. Linux `Kill()`: SIGHUP, grace period, SIGKILL (as on macOS), or a `Kill(int signal)` overload.
 4. Unix: let empty env values reach the native `unsetenv` branch (currently a no-op).
