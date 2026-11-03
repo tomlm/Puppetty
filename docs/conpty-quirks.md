@@ -26,6 +26,14 @@ win32 record on Windows, unless the Kitty keyboard protocol is active.
 - **Puppetty:** does the same (`KeyEncoder.UseWin32Input`).
 - **Repro:** to be added with the vim smoke test (M3).
 
+## Synchronized output (DEC mode 2026) is relayed
+
+The bundled OpenConsole passes `CSI ?2026h` / `CSI ?2026l` through, so settling can wait for the
+end of a frame on Windows as on Linux.
+
+- **Verified:** `SyncOutputTests` (the fixture pauses 500 ms mid-frame). With the 2026 check
+  disabled, the test sees the half-drawn frame on Windows, so the mode is reaching the emulator.
+
 ## Startup DA1 is answered by Porta.Pty
 
 OpenConsole sends `CSI c` (DA1) at startup and waits up to 3 s for a reply. Porta.Pty answers it

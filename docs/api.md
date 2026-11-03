@@ -46,7 +46,67 @@ string row0 = s.Line(0);
 (int row, int col) = s.Cursor;
 bool alt = s.IsAlternateScreen;
 bool has = s.Contains(">>> ");   // matches full-width rows, so trailing spaces count
+string box = s.GetText(row: 2, col: 4, width: 20, height: 3);
+
+Cell c = s[0, 0];
+// c.Text ("" for the right half of a wide character), c.Width (1, 2 or 0),
+// c.Foreground / c.Background (Color.Default, Color.Palette(n), Color.Rgb(r, g, b)),
+// c.Attributes (Bold, Dim, Italic, Underline, Blink, Inverse, Invisible, Strikethrough, Overline)
+bool red = c.Foreground == AnsiColor.Red;   // AnsiColor converts to its palette colour
 ```
+
+Colours are reported as the application set them, not resolved through a theme; reverse video
+is an attribute and does not swap them.
+
+## Locators
+
+Locators are lazy: they are re-evaluated against the current screen on every use.
+
+```csharp
+Locator ok    = term.GetByText("OK");                      // every occurrence, on single rows
+Locator total = term.GetByText(new Regex(@"total \d+"));
+Locator box   = term.Region(row: 0, col: 0, width: 40, height: 1);
+Locator title = term.Line(0);
+CellLocator corner = term.Cell(0, 0);
+
+bool visible = ok.IsVisible;          // matches right now?
+int count = ok.Count;
+string? text = total.Text;            // first match's text
+ScreenMatch m = await ok.WaitForAsync();   // m.Row, m.Col (screen columns, wide-char aware), m.Text
+IReadOnlyList<ScreenMatch> all = ok.Resolve(term.Screen);
+```
+
+A region or line "matches" when it holds any non-space text; its text is its rows joined with
+`\n`, trailing spaces trimmed.
+
+## Assertions (`Puppetty.Testing`)
+
+```csharp
+using static Puppetty.Testing.Assertions;
+
+await Expect(term.GetByText("Ready")).ToBeVisibleAsync();
+await Expect(term.GetByText("Loading")).Not.ToBeVisibleAsync();
+await Expect(term.GetByText(">")).ToHaveCountAsync(1);
+await Expect(term.Line(0)).ToHaveTextAsync("Pick a fruit:");
+await Expect(term.Line(0)).ToHaveTextAsync(new Regex("^Pick"));
+await Expect(term.Line(3)).ToContainTextAsync("ok");
+
+await Expect(term.Cell(0, 0)).ToHaveForegroundAsync(AnsiColor.Red);
+await Expect(term.Cell(0, 0)).ToHaveBackgroundAsync(Color.Palette(200));
+await Expect(term.Cell(1, 0)).ToHaveAttributesAsync(CellAttributes.Bold | CellAttributes.Underline);
+await Expect(term.Cell(0, 0)).ToHaveTextAsync("E");
+
+await Expect(term).ToContainTextAsync("Selected: Banana");
+await Expect(term).ToHaveCursorAtAsync(2, 0);
+await Expect(term).ToBeOnAlternateScreenAsync();
+
+await Expect(term.GetByText("slow"), TimeSpan.FromSeconds(30)).ToBeVisibleAsync();
+Assertions.DefaultTimeout = TimeSpan.FromSeconds(10);   // default 5 s
+```
+
+Every assertion re-checks each time the screen changes until it passes or times out, then throws
+`ExpectationException` with the expectation, what was actually there, and the screen. Any test
+framework reports it as a failure. See `samples/Puppetty.Samples.XUnit` for an xUnit suite.
 
 ## Waiting
 
