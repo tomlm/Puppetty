@@ -217,8 +217,9 @@ static  Win32InputGenerator.GenerateKeyEvent(...)                    // win32-in
   (measured; see `Porta.Pty/src/Porta.Pty/build/Porta.Pty.ProjectReferenceHost.targets:17-21`).
   The fallback happens when `conpty.dll` cannot find `OpenConsole.exe` beside itself, e.g. a
   portable project-reference layout. The spec's "ConPTY drops APC / blocks Kitty keyboard"
-  describes in-box conhost. Puppetty should check `PtyProvider.PseudoConsoleImplementation == "oob"`
-  at launch and warn (or fail, via an option) on `"inbox"` / `"oob-no-host"`.
+  describes in-box conhost. **Decision:** Puppetty always ships with OpenConsole
+  (consumes Porta.Pty as a NuGet package, which stages it), so OOB is assumed. A CI test
+  asserts `PtyProvider.PseudoConsoleImplementation == "oob"` on Windows to catch packaging regressions.
 - Passthrough flags are hard-coded to 0 (`Windows/PseudoConsole.cs:366`); not needed while
   OOB is in use. Kitty keyboard through OOB is still to be verified in M1/M5.
 - **Startup DA1:** Porta.Pty pre-answers OpenConsole's DA1 and strips the first `ESC[c` from
