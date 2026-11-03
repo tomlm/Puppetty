@@ -59,6 +59,18 @@ public class KeyEncoderTests
     }
 
     [Test]
+    public void KittyProtocolTakesPrecedenceOnceNegotiated()
+    {
+        var emulator = new Emulator(new XTerm.Options.TerminalOptions { KittyKeyboardEnabled = true });
+        emulator.Write("\u001b[?9001h\u001b[>1u");
+        Assert.That(emulator.KittyKeyboardActive, Is.True);
+
+        Assert.That(Encode("Escape", emulator, conPty: true), Is.EqualTo("\u001b[27u"));
+        Assert.That(Encode("Ctrl+c", emulator, conPty: true), Is.EqualTo("\u001b[99;5u"));
+        Assert.That(Encode("a", emulator, conPty: false), Is.EqualTo("a"));
+    }
+
+    [Test]
     public void Win32InputModeIsIgnoredOffConPty()
     {
         var emulator = new Emulator();

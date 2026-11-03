@@ -60,6 +60,32 @@ public class ScreenTests
     }
 
     [Test]
+    public void AnnotatedFormatShowsModesSpansAndNumberedRows()
+    {
+        var s = Render("\u001b]2;demo\u0007\u001b[?1000h\u001b[?1006h\u001b[?2004hhello\r\n\u001b[7m sel \u001b[0m\r\n\u001b[31mERR\u001b[0m", cols: 20, rows: 12);
+        var text = s.Render(ScreenFormat.Annotated);
+
+        Assert.That(text, Is.EqualTo(
+            "size 20x12 · cursor 2,3 · mouse pressrelease/sgr · bracketed-paste · title \"demo\"\n" +
+            "styles: r1 0-4 inverse; r2 0-2 fg=red\n" +
+            " 0│hello\n" +
+            " 1│ sel\n" +
+            " 2│ERR\n" +
+            "(rows 3-11 blank)\n"));
+    }
+
+    [Test]
+    public void AnsiFormatRoundTripsThroughTheEmulator()
+    {
+        var original = Render("plain \u001b[1;31mbold red\u001b[0m \u001b[48;2;1;2;3mrgb\u001b[0m\r\n\u001b[7m   \u001b[0m");
+        var replayed = Render(original.Render(ScreenFormat.Ansi));
+
+        for (var r = 0; r < original.Rows; r++)
+            for (var c = 0; c < original.Cols; c++)
+                Assert.That(replayed[r, c], Is.EqualTo(original[r, c]), $"cell ({r}, {c})");
+    }
+
+    [Test]
     public void RegionTextIsClippedAndTrimmed()
     {
         var s = Render("0123456789\r\nabcdefghij\r\nKLMNOPQRST");
