@@ -125,6 +125,29 @@ public sealed class Terminal : IAsyncDisposable
     /// <summary>The program's exit code, or null while it is running.</summary>
     public int? ExitCode => _exited.Task.IsCompletedSuccessfully ? _exited.Task.Result : null;
 
+    /// <summary>Locates every occurrence of <paramref name="text"/> on single rows.</summary>
+    public Locator GetByText(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return new TextLocator(this, text);
+    }
+
+    /// <summary>Locates every match of <paramref name="pattern"/> on single rows.</summary>
+    public Locator GetByText(System.Text.RegularExpressions.Regex pattern)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        return new TextLocator(this, pattern);
+    }
+
+    /// <summary>Locates a fixed rectangle. Its text is its rows joined with <c>\n</c>, trailing spaces trimmed.</summary>
+    public Locator Region(int row, int col, int width, int height) => new RegionLocator(this, row, col, width, height);
+
+    /// <summary>Locates one whole row.</summary>
+    public Locator Line(int row) => new RegionLocator(this, row, 0, int.MaxValue, 1, $"line {row}");
+
+    /// <summary>Locates one cell, for checking its colours and attributes.</summary>
+    public CellLocator Cell(int row, int col) => new(this, row, col);
+
     /// <summary>Types <paramref name="text"/> as literal keystrokes, then waits for the screen to settle.</summary>
     /// <remarks><c>\n</c> is sent as Enter (<c>\r</c>), as a keyboard would.</remarks>
     public async Task TypeAsync(string text, CancellationToken cancellationToken = default)
@@ -213,7 +236,7 @@ public sealed class Terminal : IAsyncDisposable
             if (predicate(screen))
                 return screen;
             if (ended)
-                throw new TerminalTimeoutException($"Output ended (exit code {ExitCode?.ToString() ?? "unknown"}) before {description} appeared.", screen);
+                throw new TerminalTimeoutException($"Output ended (exit code {ExitCode?.ToString() ?? "unknown"}) before {description} appeared.", screen, outputEnded: true);
 
             var left = deadline - _time.GetUtcNow();
             if (left <= TimeSpan.Zero)
