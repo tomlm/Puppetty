@@ -10,6 +10,7 @@
     <PackageReference Include="NUnit" Version="4.3.2" />
     <PackageReference Include="NUnit.Analyzers" Version="4.7.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.0.0" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +18,8 @@
     <ProjectReference Include="..\..\src\Puppetty.Testing\Puppetty.Testing.csproj" />
     <!-- Copied into the test output so tests can launch it with `dotnet Puppetty.Fixture.dll <mode>`. -->
     <ProjectReference Include="..\fixtures\Puppetty.Fixture\Puppetty.Fixture.csproj" />
+    <!-- Likewise copied so the MCP tests can run the server over stdio. -->
+    <ProjectReference Include="..\..\src\Puppetty.Mcp\Puppetty.Mcp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
