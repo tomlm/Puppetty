@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Puppetty\Puppetty.csproj" />
+    <ProjectReference Include="..\Puppetty.NET\Puppetty.NET.csproj" />
   </ItemGroup>
 
 </Project>

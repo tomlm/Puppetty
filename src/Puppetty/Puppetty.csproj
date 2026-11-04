@@ -1,17 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>Puppetty</RootNamespace>
-    <Description>Drive CLI/TUI programs in a real pseudo-terminal from code: type, press keys, wait for the screen, read it back.</Description>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Puppetty.Cli</RootNamespace>
+    <Description>Command-line driver for CLI/TUI programs in a real terminal, with sessions kept alive by a background daemon.</Description>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>puppetty</ToolCommandName>
+    <!-- An app, not a library. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Porta.Pty" Version="2.2.3" />
-    <PackageReference Include="XTerm.NET" Version="3.0.2" />
+    <PackageReference Include="System.CommandLine" Version="2.0.11" />
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Puppetty.Tests" />
+    <ProjectReference Include="..\Puppetty.NET\Puppetty.NET.csproj" />
   </ItemGroup>
 
 </Project>

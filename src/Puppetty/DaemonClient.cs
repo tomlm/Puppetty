@@ -50,7 +50,7 @@ internal static class DaemonClient
     {
         var self = Environment.ProcessPath ?? throw new InvalidOperationException("Cannot locate the puppetty executable.");
         var args = new List<string>();
-        // Running as `dotnet Puppetty.Cli.dll` rather than the apphost: pass the dll along.
+        // Running as `dotnet Puppetty.dll` rather than the apphost: pass the dll along.
         if (Path.GetFileNameWithoutExtension(self).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
             args.Add(typeof(DaemonClient).Assembly.Location);
         args.Add("daemon");

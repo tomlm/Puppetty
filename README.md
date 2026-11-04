@@ -26,10 +26,10 @@ await Expect(term).ToMatchSnapshotAsync("python-42");
 
 | Project | What it is |
 |---|---|
-| `src/Puppetty` | Core: `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces, sessions. |
+| `src/Puppetty.NET` | Core library (package `Puppetty.NET`, namespace `Puppetty`): `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces, sessions. |
 | `src/Puppetty.Testing` | Auto-retrying `Expect(...)` assertions and golden snapshots; works with xUnit, NUnit and MSTest. |
 | `src/Puppetty.Mcp` | MCP server (`puppetty-mcp`) giving AI agents the `terminal_*` tools. |
-| `src/Puppetty.Cli` | `puppetty` command-line tool with daemon-backed sessions and a live `attach` view. |
+| `src/Puppetty` | `puppetty` command-line tool (package `Puppetty`) with daemon-backed sessions and a live `attach` view. |
 
 ## Docs
 

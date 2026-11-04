@@ -11,7 +11,7 @@ namespace Puppetty.Tests;
 public class CliTests
 {
     private static readonly string DotNet = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet";
-    private static readonly string CliDll = Path.Combine(AppContext.BaseDirectory, "Puppetty.Cli.dll");
+    private static readonly string CliDll = Path.Combine(AppContext.BaseDirectory, "Puppetty.dll");
     private static readonly string FixtureDll = Path.Combine(AppContext.BaseDirectory, "Puppetty.Fixture.dll");
 
     private string _pipe = null!;

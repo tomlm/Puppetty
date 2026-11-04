@@ -4,7 +4,7 @@ Drive terminal programs from a shell or script. Sessions live in a background da
 command is a separate, short invocation.
 
 ```sh
-dotnet tool install -g Puppetty.Cli        # or: dotnet run --project src/Puppetty.Cli -- <command>
+dotnet tool install -g Puppetty            # or: dotnet run --project src/Puppetty -- <command>
 
 id=$(puppetty start --cmd "python3 -i -q" --cols 80 --rows 24)   # prints the session id, e.g. t1
 puppetty type    --id $id "print(6*7)"

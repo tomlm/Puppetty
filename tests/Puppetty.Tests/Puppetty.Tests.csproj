@@ -14,13 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Puppetty\Puppetty.csproj" />
+    <ProjectReference Include="..\..\src\Puppetty.NET\Puppetty.NET.csproj" />
     <ProjectReference Include="..\..\src\Puppetty.Testing\Puppetty.Testing.csproj" />
     <!-- Copied into the test output so tests can launch it with `dotnet Puppetty.Fixture.dll <mode>`. -->
     <ProjectReference Include="..\fixtures\Puppetty.Fixture\Puppetty.Fixture.csproj" />
     <!-- Likewise copied so the MCP tests can run the server over stdio. -->
     <ProjectReference Include="..\..\src\Puppetty.Mcp\Puppetty.Mcp.csproj" />
-    <ProjectReference Include="..\..\src\Puppetty.Cli\Puppetty.Cli.csproj" />
+    <ProjectReference Include="..\..\src\Puppetty\Puppetty.csproj" />
   </ItemGroup>
 
   <ItemGroup>
