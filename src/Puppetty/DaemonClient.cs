@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.IO.Pipes;
 using CShellNet;
 
@@ -56,18 +55,10 @@ internal static class DaemonClient
             args.Add(typeof(DaemonClient).Assembly.Location);
         args.Add("daemon");
 
-        var shell = new CShell { Echo = false };
-        if (OperatingSystem.IsWindows())
-        {
-            // Start() goes through ShellExecute, which passes the daemon none of our handles, so a
-            // caller capturing our output (`$(puppetty start ...)`, a test harness) sees end-of-file
-            // when we exit rather than when the daemon does. It gets its own console; keep it hidden.
-            shell.Start(o => o.StartInfo(i => i.WindowStyle = ProcessWindowStyle.Hidden), self, [.. args]);
-            return;
-        }
-
-        // On Unix .NET marks its descriptors close-on-exec, so running it with 0-2 redirected keeps
-        // the daemon off the caller's terminal and pipes.
-        shell.Run(self, [.. args]).StandardInput.Dispose();
+        // Background() gives the daemon none of our handles or streams, so a caller capturing our
+        // output (`$(puppetty start ...)`, a test harness) sees end-of-file when we exit rather than
+        // when the daemon does. It also leaves the terminal: no window, and its own process group
+        // (Windows) or session (Linux), so Ctrl+C or closing the terminal doesn't take it down.
+        new CShell { Echo = false }.Background(self, [.. args]);
     }
 }

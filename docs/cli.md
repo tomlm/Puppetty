@@ -54,10 +54,10 @@ Errors go to stderr with exit code 1; a timed-out `wait` prints the screen with 
 
 ## The daemon
 
-- **Starting:** the first command that needs it starts the daemon (`puppetty daemon`) through
-  CShell. On Windows that goes through ShellExecute with a hidden window, so the daemon inherits
-  none of the caller's handles; on Unix its standard streams are redirected. Either way
-  `$(puppetty start ...)` returns as soon as the id is printed.
+- **Starting:** the first command that needs it starts the daemon (`puppetty daemon`) with CShell's
+  `Background()`. The daemon gets no window and none of the caller's handles or streams, so
+  `$(puppetty start ...)` returns as soon as the id is printed. It runs in its own process group
+  (Windows) or session (Linux), so Ctrl+C or closing the terminal that started it doesn't stop it.
 - **Transport:** it listens on a per-user named pipe on Windows and a Unix domain socket elsewhere,
   both restricted to the current user. `PUPPETTY_PIPE` overrides the name, which gives a private
   daemon (the tests use this).

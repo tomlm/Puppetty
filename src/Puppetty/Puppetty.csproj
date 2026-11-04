@@ -9,9 +9,53 @@
     <!-- An app, not a library: the MCP tools' [Description] attributes are their documentation. -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
+<PropertyGroup>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Description></Description>
+    <Company>Iciclecreek</Company>
+    <Authors>Tom Laird-McConnell</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tomlm/Puppetty</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/tomlm/Puppetty/master/icon.png</PackageIconUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <RepositoryUrl>https://github.com/tomlm/Puppetty</RepositoryUrl>
+    <Copyright>Tom Laird-McConnell All Rights Reserved</Copyright>
+    <RootNamespace>Puppetty</RootNamespace>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <!-- A tool package is the app's whole publish folder, so .pdb files would go into the .nupkg
+         (a .snupkg doesn't keep them out). The tool's own symbols are embedded in its dll instead, so
+         stack traces still have line numbers, and no other .pdb is published (see
+         ExcludeSymbolsFromToolPackage). -->
+    <DebugType>embedded</DebugType>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackAsTool>true</PackAsTool>
+    <PackageId>Puppetty</PackageId>
+    <ToolCommandName>Puppetty</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <RuntimeIdentifiers Condition="'$(Configuration)' == 'Release'">win-x64;linux-x64;osx-x64;win-arm64;linux-arm64;osx-arm64;any</RuntimeIdentifiers>
+    <PublishReadyToRun Condition="'$(Configuration)' == 'Release'">true</PublishReadyToRun>
+  </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CShell" Version="3.2.1" />
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+    <None Include="../../icon.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <!-- Keeps the .pdb files of referenced projects and packages (native ones can be hundreds of MB)
+       out of the publish folder, and so out of the tool package. The build output keeps them. -->
+  <Target Name="ExcludeSymbolsFromToolPackage" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+
+  <ItemGroup>
+    <PackageReference Include="CShell" Version="3.3.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
     <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
   </ItemGroup>
