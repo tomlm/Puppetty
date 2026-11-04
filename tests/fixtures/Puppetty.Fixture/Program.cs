@@ -19,6 +19,11 @@ using System.Text;
 
 const string Esc = "\u001b";
 
+// On Windows the console's code page is the system's OEM one unless a program changes it (437 on
+// GitHub's runners), and .NET writes with it, so "日本" would arrive as "??". See conpty-quirks.md.
+Console.OutputEncoding = Encoding.UTF8;
+Console.InputEncoding = Encoding.UTF8;
+
 return args.FirstOrDefault() switch
 {
     "echo" => Echo(),

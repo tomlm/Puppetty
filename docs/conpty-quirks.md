@@ -80,6 +80,21 @@ with `ENABLE_VIRTUAL_TERMINAL_INPUT`).
 
 - **Verified:** `InputModeTests` (click, locator click, bracketed and plain paste).
 
+## The console code page is the system's, not UTF-8
+
+A pseudoconsole starts with the system's OEM code page unless the machine has the "Beta: Use
+Unicode UTF-8" setting on. GitHub's Windows runners use 437. Programs that write through the
+code page then turn anything outside it into `?`. .NET is one of them: `Console.OutputEncoding`
+follows the console's code page, so `Console.Write("日本")` arrives as `??`. Programs that write
+UTF-16 with `WriteConsoleW`, or that set the code page themselves, are unaffected.
+
+- **What Puppetty does:** nothing. The code page belongs to the program, and changing it from
+  outside would hide a bug the program has in a real terminal too.
+- **In your own .NET program:** set `Console.OutputEncoding = Encoding.UTF8` at startup. The test
+  fixture does.
+- **Found by:** `ExpectTests.LocatesTextAndRegions` passing on a UTF-8 machine and failing on the
+  windows-latest runner.
+
 ## Not ConPTY: .NET console apps on Unix
 
 These are testing pitfalls on Linux, not ConPTY quirks; they're recorded here because they cost
