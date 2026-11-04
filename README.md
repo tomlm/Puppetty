@@ -33,10 +33,12 @@ await Expect(term).ToMatchSnapshotAsync("python-42");
 
 - [docs/api.md](docs/api.md): the library: launching, input, reading the screen, locators,
   assertions, settling, snapshots, traces.
+  
 - [docs/mcp.md](docs/mcp.md): the MCP server, setup in Claude Code, the annotated screenshot format.
+
 - [docs/cli.md](docs/cli.md): the `puppetty` CLI and its daemon.
-- [docs/conpty-quirks.md](docs/conpty-quirks.md): Windows ConPTY behaviour found while testing.
-- [docs/step0-findings.md](docs/step0-findings.md): notes on XTerm.NET and Porta.Pty.
+
+  
 
 ## Build and test
 
