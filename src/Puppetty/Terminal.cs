@@ -106,6 +106,12 @@ public sealed class Terminal : IAsyncDisposable
         return new Terminal(pty, options);
     }
 
+    /// <summary>
+    /// Raised after output from the program has been applied to the screen, and once more when the
+    /// output ends. Raised on a background thread; handlers must be quick and must not throw.
+    /// </summary>
+    public event EventHandler? Changed;
+
     /// <summary>A snapshot of the screen right now.</summary>
     public Screen Screen
     {
@@ -419,6 +425,7 @@ public sealed class Terminal : IAsyncDisposable
                     _changed = NewSignal();
                 }
                 changed.TrySetResult();
+                RaiseChanged();
 
                 if (replies is not null)
                     await WriteAsync(replies, _disposing.Token).ConfigureAwait(false);
@@ -437,7 +444,15 @@ public sealed class Terminal : IAsyncDisposable
                 changed = _changed;
             }
             changed.TrySetResult();
+            RaiseChanged();
         }
+    }
+
+    private void RaiseChanged()
+    {
+        // A throwing handler must not stop the pump: the session would silently stop updating.
+        try { Changed?.Invoke(this, EventArgs.Empty); }
+        catch (Exception) { }
     }
 
     /// <summary>Everything the emulator emitted toward the application since the last call. Caller holds _gate.</summary>
