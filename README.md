@@ -30,8 +30,8 @@ await Expect(term).ToMatchSnapshotAsync("python-42");
 
 | Package | Install | What it is |
 |---|---|---|
-| **Puppetty.NET** (`src/Puppetty.NET`) | `dotnet add package Puppetty.NET` | The library, namespace `Puppetty`: `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces. Also auto-retrying `Expect(...)` assertions and golden snapshots (namespace `Puppetty.Testing`) for xUnit, NUnit and MSTest. |
-| **Puppetty** (`src/Puppetty`) | `dotnet tool install -g Puppetty` | The `puppetty` tool: shell commands with daemon-backed sessions and a live `attach` view, and `puppetty mcp`, an MCP server giving AI agents the `terminal_*` tools. |
+| **Puppetty.NET**  | `dotnet add package Puppetty.NET` | The library, namespace `Puppetty`: `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces. Also auto-retrying `Expect(...)` assertions and golden snapshots (namespace `Puppetty.Testing`) for xUnit, NUnit and MSTest. |
+| **Puppetty**  | `dotnet tool install -g Puppetty` | The `puppetty` tool: shell commands with daemon-backed sessions and a live `attach` view, and `puppetty mcp`, an MCP server giving AI agents the `terminal_*` tools. |
 
 ## Docs
 
