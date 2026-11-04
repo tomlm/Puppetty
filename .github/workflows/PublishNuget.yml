@@ -26,7 +26,7 @@ jobs:
   
       - name: dotnet pack 
         run: |
-          dotnet pack --no-build Puppetty.slnx -c Release -o packages --include-symbols --property WarningLevel=0
+          dotnet pack --no-build Puppetty.slnx -c Release -o packages --property WarningLevel=0
 
       - name: NuGet login (trusted publishing)
         id: nuget-login

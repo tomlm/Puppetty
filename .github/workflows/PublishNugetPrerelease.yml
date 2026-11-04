@@ -68,7 +68,7 @@ jobs:
 
       - name: dotnet pack
         run: |
-          dotnet pack Puppetty.slnx -c Release -o packages --include-symbols --property WarningLevel=0 /p:Version=${{ steps.versioning.outputs.version }}
+          dotnet pack Puppetty.slnx -c Release -o packages --property WarningLevel=0 /p:Version=${{ steps.versioning.outputs.version }}
 
       - name: NuGet login (trusted publishing)
         id: nuget-login
