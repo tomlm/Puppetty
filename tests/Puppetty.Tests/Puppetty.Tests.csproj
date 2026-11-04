@@ -20,6 +20,7 @@
     <ProjectReference Include="..\fixtures\Puppetty.Fixture\Puppetty.Fixture.csproj" />
     <!-- Likewise copied so the MCP tests can run the server over stdio. -->
     <ProjectReference Include="..\..\src\Puppetty.Mcp\Puppetty.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\Puppetty.Cli\Puppetty.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>
