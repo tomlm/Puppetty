@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Puppetty.Cli</RootNamespace>
+    <!-- Not "puppetty": that would collide with Puppetty.dll on case-insensitive file systems.
+         The installed tool command is still `puppetty` (ToolCommandName). -->
+    <AssemblyName>Puppetty.Cli</AssemblyName>
+    <Description>Command-line driver for CLI/TUI programs in a real terminal, with sessions kept alive by a background daemon.</Description>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>puppetty</ToolCommandName>
+    <!-- An app, not a library. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Puppetty\Puppetty.csproj" />
+  </ItemGroup>
+
+</Project>
