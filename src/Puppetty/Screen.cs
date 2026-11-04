@@ -113,23 +113,33 @@ public sealed class Screen
         var buffer = emulator.Buffer;
         int rows = emulator.Rows, cols = emulator.Cols;
         var cells = new Cell[rows, cols];
-        var rowText = new Row[rows];
-        var sb = new StringBuilder(cols);
-        var columns = new List<int>(cols);
-
         for (var r = 0; r < rows; r++)
         {
             // The active screen starts at YBase; rows before it are scrollback.
             var line = buffer.GetLine(buffer.YBase + r);
+            for (var c = 0; c < cols; c++)
+                cells[r, c] = line is not null && c < line.Length ? ToCell(line[c]) : Blank;
+        }
+        return FromCells(cells, (buffer.Y, buffer.X), emulator.CursorVisible, emulator.IsAlternateBufferActive,
+            TerminalModes.Capture(emulator), emulator.Title ?? "");
+    }
+
+    /// <summary>Builds a screen from its cells (used by capture and by loading a snapshot).</summary>
+    internal static Screen FromCells(Cell[,] cells, (int Row, int Col) cursor, bool cursorVisible, bool alternateScreen, TerminalModes modes, string title)
+    {
+        int rows = cells.GetLength(0), cols = cells.GetLength(1);
+        var rowText = new Row[rows];
+        var sb = new StringBuilder(cols);
+        var columns = new List<int>(cols);
+        for (var r = 0; r < rows; r++)
+        {
             sb.Clear();
             columns.Clear();
             for (var c = 0; c < cols; c++)
             {
-                var cell = line is not null && c < line.Length ? ToCell(line[c]) : Blank;
-                cells[r, c] = cell;
                 // A row's string has one entry per character; remember which column each came from
                 // so a match in the string maps back to a screen position past wide characters.
-                foreach (var ch in cell.Text)
+                foreach (var ch in cells[r, c].Text)
                 {
                     sb.Append(ch);
                     columns.Add(c);
@@ -138,8 +148,7 @@ public sealed class Screen
             var padded = sb.ToString();
             rowText[r] = new Row(padded, padded.TrimEnd(' '), columns.ToArray());
         }
-        return new Screen(cells, rowText, buffer.Y, buffer.X, emulator.CursorVisible, emulator.IsAlternateBufferActive,
-            TerminalModes.Capture(emulator), emulator.Title ?? "");
+        return new Screen(cells, rowText, cursor.Row, cursor.Col, cursorVisible, alternateScreen, modes, title);
     }
 
     private static readonly Cell Blank = new(" ", 1, Color.Default, Color.Default, CellAttributes.None);

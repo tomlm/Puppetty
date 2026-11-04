@@ -30,6 +30,15 @@ public sealed class LaunchOptions
     /// <summary>Default timeout for the <c>WaitFor*</c> methods. Default 10 seconds.</summary>
     public TimeSpan DefaultTimeout { get; init; } = TimeSpan.FromSeconds(10);
 
+    /// <summary>
+    /// Record a <see cref="Trace"/> of output, input, resizes and settling, for saving and replaying
+    /// (Puppetty.Testing saves it when an assertion fails). Default true.
+    /// </summary>
+    public bool RecordTrace { get; init; } = true;
+
+    /// <summary>Recording stops once the trace holds this many bytes of output and input. Default 16 MB.</summary>
+    public long MaxTraceBytes { get; init; } = 16 * 1024 * 1024;
+
     /// <summary>Clock used for settling and timeouts. Tests can substitute a fake.</summary>
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 }

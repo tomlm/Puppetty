@@ -42,14 +42,21 @@ public sealed class Terminal : IAsyncDisposable
     private readonly CancellationTokenSource _disposing = new();
     private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Task _pump;
+    private readonly string _command;
+    private readonly DateTimeOffset _startedAt;
+    private readonly TraceRecorder? _trace;
     private int _disposed;
 
-    private Terminal(IPtyConnection pty, LaunchOptions options)
+    private Terminal(IPtyConnection pty, string command, LaunchOptions options)
     {
         _pty = pty;
+        _command = command;
         _options = options;
         _time = options.TimeProvider;
-        _quiet = new Quiescence(options.Settle, _time.GetUtcNow());
+        _startedAt = _time.GetUtcNow();
+        _quiet = new Quiescence(options.Settle, _startedAt);
+        if (options.RecordTrace)
+            _trace = new TraceRecorder(options.MaxTraceBytes, _startedAt);
 
         _emulator = new Emulator(new EmulatorOptions
         {
@@ -103,7 +110,19 @@ public sealed class Terminal : IAsyncDisposable
         }
 
         var pty = await PtyProvider.SpawnAsync(ptyOptions, cancellationToken).ConfigureAwait(false);
-        return new Terminal(pty, options);
+        return new Terminal(pty, command, options);
+    }
+
+    /// <summary>Whether this terminal records a trace (<see cref="LaunchOptions.RecordTrace"/>).</summary>
+    public bool IsTracing => _trace is not null;
+
+    /// <summary>A copy of the trace recorded so far.</summary>
+    /// <exception cref="InvalidOperationException">Tracing was turned off at launch.</exception>
+    public Trace GetTrace()
+    {
+        var recorder = _trace ?? throw new InvalidOperationException("Tracing is off for this terminal (LaunchOptions.RecordTrace).");
+        var (events, truncated) = recorder.Snapshot();
+        return new Trace(_command, [.. _options.Args], _options.Cols, _options.Rows, _options.Scrollback, _startedAt, _options.Settle, truncated, events);
     }
 
     /// <summary>
@@ -276,6 +295,7 @@ public sealed class Terminal : IAsyncDisposable
             _quiet.OnInput(_time.GetUtcNow(), bareEscape: false);
         }
         _pty.Resize(cols, rows);
+        _trace?.Record(_time.GetUtcNow(), TraceEventKind.Resize, cols: cols, rows: rows);
         if (replies is not null)
             await WriteAsync(replies, cancellationToken).ConfigureAwait(false);
         await SettleAsync(cancellationToken).ConfigureAwait(false);
@@ -419,6 +439,7 @@ public sealed class Terminal : IAsyncDisposable
                 lock (_gate)
                 {
                     _emulator.Write(buffer.AsSpan(0, read));
+                    _trace?.Record(_time.GetUtcNow(), TraceEventKind.Output, buffer.AsSpan(0, read));
                     _quiet.OnOutput(_time.GetUtcNow());
                     replies = TakeReplies();
                     changed = _changed;
@@ -481,6 +502,7 @@ public sealed class Terminal : IAsyncDisposable
         try
         {
             await _pty.WriterStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            _trace?.Record(_time.GetUtcNow(), TraceEventKind.Input, bytes);
         }
         finally
         {
@@ -494,29 +516,44 @@ public sealed class Terminal : IAsyncDisposable
 
     private async Task<bool> TrySettleAsync(TimeSpan timeout, CancellationToken cancellationToken)
     {
-        var deadline = _time.GetUtcNow() + timeout;
+        var started = _time.GetUtcNow();
+        var deadline = started + timeout;
+        var waitedOnSync = false;
         while (true)
         {
             TimeSpan? remaining;
             Task changed;
+            bool ended;
             lock (_gate)
             {
-                if (_outputEnded)
-                    return true;
+                ended = _outputEnded;
                 remaining = _quiet.Remaining(_time.GetUtcNow(), _emulator.SynchronizedOutput);
                 changed = _changed.Task;
             }
-            if (remaining == TimeSpan.Zero)
+            if (ended || remaining == TimeSpan.Zero)
+            {
+                RecordSettle(started, ended ? "output ended" : waitedOnSync ? "quiet after a synchronized frame" : "quiet");
                 return true;
+            }
+            waitedOnSync |= remaining is null;
 
             var left = deadline - _time.GetUtcNow();
             if (left <= TimeSpan.Zero)
+            {
+                RecordSettle(started, remaining is null ? "gave up: inside a synchronized frame" : "gave up: output kept arriving");
                 return false;
+            }
             // Inside a synchronized-output block, wait for the next output (the block ending is
             // output); otherwise wait out the rest of the quiet period, cut short by new output.
             var wait = remaining is { } r && r < left ? r : left;
             await WhenChangedOrElapsed(changed, wait, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private void RecordSettle(DateTimeOffset started, string how)
+    {
+        var now = _time.GetUtcNow();
+        _trace?.Record(now, TraceEventKind.Settled, note: $"{how} ({(now - started).TotalMilliseconds:F0} ms)");
     }
 
     private async Task WhenChangedOrElapsed(Task changed, TimeSpan wait, CancellationToken cancellationToken)
