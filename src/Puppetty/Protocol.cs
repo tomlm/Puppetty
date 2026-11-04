@@ -57,11 +57,38 @@ internal static class Protocol
     private static readonly UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>
-    /// The daemon's pipe: a named pipe on Windows, a Unix domain socket elsewhere (.NET maps the name).
-    /// Per user; <c>PUPPETTY_PIPE</c> overrides it (tests use this to get a private daemon).
+    /// The daemon's name, per user; <c>PUPPETTY_PIPE</c> overrides it (tests use this to get a
+    /// private daemon).
     /// </summary>
-    public static string PipeName =>
+    public static string Name =>
         Environment.GetEnvironmentVariable("PUPPETTY_PIPE") is { Length: > 0 } name ? name : $"puppetty-{Environment.UserName}";
+
+    /// <summary>
+    /// What to open: a named pipe on Windows, a Unix domain socket elsewhere. See <see cref="SocketPath"/>.
+    /// </summary>
+    public static string PipeName => OperatingSystem.IsWindows() ? Name : SocketPath(Name, Path.GetTempPath());
+
+    // The longest socket path every Unix takes: sun_path is 104 bytes on macOS, 108 on Linux,
+    // counting the terminating NUL.
+    private const int MaxSocketPath = 103;
+
+    /// <summary>
+    /// .NET puts a pipe's socket at <c>$TMPDIR/CoreFxPipe_&lt;name&gt;</c>, and macOS's <c>$TMPDIR</c>
+    /// (<c>/var/folders/xx/…/T/</c>) leaves little room. When that path would be too long, use an
+    /// absolute path under <c>/tmp</c> instead, which .NET takes as the socket path as it is.
+    /// <see cref="Options"/> still keeps other users out.
+    /// </summary>
+    internal static string SocketPath(string name, string tempPath)
+    {
+        if (Encoding.UTF8.GetByteCount(Path.Combine(tempPath, "CoreFxPipe_" + name)) <= MaxSocketPath)
+            return name;
+        var path = "/tmp/" + name;
+        if (Encoding.UTF8.GetByteCount(path) <= MaxSocketPath)
+            return path;
+        // A name too long even for /tmp: keep it unique with a hash of the whole name.
+        var hash = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(name)))[..16];
+        return $"/tmp/puppetty-{hash}";
+    }
 
     // CurrentUserOnly: other users on the machine cannot connect and drive your sessions.
     public const PipeOptions Options = PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly;
