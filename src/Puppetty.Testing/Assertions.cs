@@ -20,6 +20,20 @@ public static class Assertions
     /// <summary>How long assertions retry when no timeout is given. Default 5 seconds.</summary>
     public static TimeSpan DefaultTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
+    /// <summary>
+    /// Where failure artifacts (traces, actual snapshots) are written. Defaults to
+    /// <c>PUPPETTY_ARTIFACTS</c>, else <c>puppetty-artifacts</c> under the current directory
+    /// (the test output directory under <c>dotnet test</c>).
+    /// </summary>
+    public static string ArtifactsDirectory { get; set; } =
+        Environment.GetEnvironmentVariable("PUPPETTY_ARTIFACTS") is { Length: > 0 } dir ? dir : Path.Combine(Environment.CurrentDirectory, "puppetty-artifacts");
+
+    /// <summary>
+    /// Where golden snapshots live. Null (the default) means a <c>__snapshots__</c> folder next to
+    /// the test source file that calls <see cref="TerminalAssertions.ToMatchSnapshotAsync"/>.
+    /// </summary>
+    public static string? SnapshotDirectory { get; set; }
+
     /// <summary>Assertions about a located piece of the screen.</summary>
     public static LocatorAssertions Expect(Locator locator, TimeSpan? timeout = null)
     {
@@ -75,7 +89,36 @@ internal static class Retry
             var actual = check(ex.Screen).Actual;
             var not = negated ? "not " : "";
             var reason = ex.OutputEnded ? " (the program's output ended)" : $" within {timeout}";
-            throw new ExpectationException($"Expected {subject} {not}{expectation}{reason}.\nActual: {actual}", ex.Screen);
+            throw new ExpectationException($"Expected {subject} {not}{expectation}{reason}.\nActual: {actual}{Artifacts.SaveTrace(terminal, subject)}", ex.Screen);
         }
+    }
+}
+
+/// <summary>Writes failure artifacts into <see cref="Assertions.ArtifactsDirectory"/>.</summary>
+internal static class Artifacts
+{
+    /// <summary>Saves the terminal's trace; returns a message line naming the file, or "" if there is none.</summary>
+    public static string SaveTrace(Terminal terminal, string label)
+    {
+        if (!terminal.IsTracing)
+            return "";
+        try
+        {
+            var path = PathFor(label, Trace.Extension);
+            terminal.GetTrace().Save(path);
+            return $"\nTrace: {path}";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"\n(could not save trace: {ex.Message})";
+        }
+    }
+
+    public static string PathFor(string label, string extension)
+    {
+        var safe = new string(label.Select(c => char.IsLetterOrDigit(c) || c is '-' or '_' ? c : '-').ToArray()).Trim('-');
+        if (safe.Length > 60)
+            safe = safe[..60];
+        return Path.Combine(Assertions.ArtifactsDirectory, $"{DateTime.Now:yyyyMMdd-HHmmss-fff}-{safe}{extension}");
     }
 }
