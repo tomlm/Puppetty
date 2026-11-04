@@ -1,3 +1,7 @@
+[![Build and Test](https://github.com/tomlm/Puppetty/actions/workflows/BuildAndRunTests.yml/badge.svg)](https://github.com/tomlm/Puppetty/actions/workflows/BuildAndRunTests.yml)[![NuGet](https://img.shields.io/nuget/v/Puppetty.svg)](https://www.nuget.org/packages/Puppetty)
+
+![Logo](https://raw.githubusercontent.com/tomlm/Puppetty/refs/heads/main/icon.png)
+
 # Puppetty
 
 Cross-platform Playwright for terminals, in .NET. Run any CLI or TUI program in a real pseudo-terminal, emulate
