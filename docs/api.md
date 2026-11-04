@@ -32,8 +32,23 @@ Chords: `Enter`, `Tab`, `Backspace`, `Escape`/`Esc`, `Space`, `Up`/`Down`/`Left`
 `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`, `F1`–`F12`, or any single character,
 with `Ctrl+`, `Alt+`, `Shift+` prefixes. Case-insensitive.
 
-Keys are encoded for the application's current modes (for example application cursor keys,
-DECCKM). On Windows, keys go as win32-input-mode records when ConPTY asks for them.
+Keys are encoded for the application's current modes, in this order of precedence:
+1. the Kitty keyboard protocol (CSI-u), once the application has negotiated it;
+2. on Windows, win32-input-mode records, which ConPTY asks for at startup (a bare Escape always goes this way);
+3. otherwise legacy VT, honouring application cursor keys (DECCKM) and keypad mode.
+
+```csharp
+await term.PasteAsync("multi\nline");       // bracketed (ESC[200~ … ESC[201~) when the app enabled mode 2004
+bool sent = await term.ClickAsync(row: 3, col: 10);           // press + release, in the app's mouse encoding
+await term.ClickAsync(3, 10, MouseButton.Right, KeyModifiers.Control);
+await term.ScrollWheelAsync(row: 5, col: 0, clicks: 3);        // positive = down
+await term.GetByText("OK").ClickAsync();                       // waits for the text, clicks its first cell
+await term.ResizeAsync(120, 40);                                // the app gets SIGWINCH
+IReadOnlyList<string> old = term.GetScrollback(maxLines: 100);  // oldest first; empty on the alternate screen
+```
+
+`ClickAsync` and `ScrollWheelAsync` return false and send nothing when the application has not
+enabled mouse reporting (`Screen.Modes.Mouse == MouseTracking.None`).
 
 Every action returns once the screen has settled (see below).
 
@@ -57,6 +72,16 @@ bool red = c.Foreground == AnsiColor.Red;   // AnsiColor converts to its palette
 
 Colours are reported as the application set them, not resolved through a theme; reverse video
 is an attribute and does not swap them.
+
+```csharp
+TerminalModes m = s.Modes;     // ApplicationCursorKeys, BracketedPaste, Mouse, MouseEncoding,
+                               // FocusReporting, SynchronizedOutput, KittyKeyboardFlags, ...
+string title = s.Title;
+string forAgents = s.Render(ScreenFormat.Annotated);   // header + styled spans + numbered rows
+string forHumans = s.Render(ScreenFormat.Ansi);        // with SGR colour escapes
+```
+
+The annotated format is described in [mcp.md](mcp.md#the-annotated-format).
 
 ## Locators
 
@@ -143,3 +168,53 @@ new LaunchOptions
     TimeProvider = fakeTimeProvider,   // for tests of your own
 };
 ```
+
+Each settle decision is recorded in the trace, e.g. `settled quiet (81 ms)`,
+`settled quiet after a synchronized frame (512 ms)` or `settled gave up: output kept arriving (5000 ms)`.
+
+## Snapshots
+
+```csharp
+await Expect(term).ToMatchSnapshotAsync("vim-insert");
+await Expect(term).ToMatchSnapshotAsync("status", new ScreenDiffOptions { CompareStyles = false, CompareCursor = true });
+```
+
+- Golden files are `__snapshots__/<name>.puppetty-snap` next to the test source file, or in
+  `Assertions.SnapshotDirectory`. Commit them.
+- A missing golden is created from the settled screen and the assertion passes. Under CI (the `CI`
+  environment variable is set) a missing golden fails instead.
+- `PUPPETTY_UPDATE_SNAPSHOTS=1` rewrites goldens from the current screens.
+- The assertion retries until the screen matches. On failure the message holds a side-by-side diff
+  (`^` = text differs, `~` = style only), and the actual snapshot and the trace are written to
+  `Assertions.ArtifactsDirectory`.
+
+The file is a zip container: `manifest.json` (format version, size, cursor, modes, title),
+`cells.bin` (binary cell array: text, width, colours, attributes) and `screen.txt` (for people).
+It is laid out to move to the `.tug` format later.
+
+```csharp
+Snapshot.Save(term.Screen, "screen.puppetty-snap");
+Screen s = Snapshot.Load("screen.puppetty-snap");
+ScreenDiff diff = ScreenDiff.Compare(expected, actual);
+if (!diff.IsMatch) Console.WriteLine(diff);    // side-by-side, changed cells marked
+```
+
+## Traces
+
+Every terminal records a trace by default (`LaunchOptions.RecordTrace`, capped by
+`MaxTraceBytes`, 16 MB). It holds the program's raw output, everything sent to it (keys, pastes,
+mouse, replies to its queries), resizes and settle decisions, all timestamped.
+
+```csharp
+Trace trace = term.GetTrace();
+trace.Save("run.puppetty-trace");            // zip: manifest.json, events.bin, timeline.txt
+
+var loaded = Trace.Load("run.puppetty-trace");
+Screen end = loaded.Replay();                // feed the output back through the emulator
+Screen then = loaded.Replay(until: TimeSpan.FromSeconds(1.5));
+Console.WriteLine(loaded.ToTimeline());      // one line per event, escapes shown as \e
+```
+
+When any `Expect` assertion fails, Puppetty.Testing saves the trace to
+`Assertions.ArtifactsDirectory` (`PUPPETTY_ARTIFACTS`, else `./puppetty-artifacts`) and names the
+file in the failure message.
