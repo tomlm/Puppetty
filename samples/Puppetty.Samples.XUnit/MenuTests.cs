@@ -31,6 +31,14 @@ public sealed class MenuTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task StartScreenMatchesGolden()
+    {
+        // Golden file: __snapshots__/menu-start.puppetty-snap next to this file. Created on the
+        // first local run; PUPPETTY_UPDATE_SNAPSHOTS=1 rewrites it.
+        await Expect(_term).ToMatchSnapshotAsync("menu-start");
+    }
+
+    [Fact]
     public async Task ArrowKeysMoveTheSelection()
     {
         await _term.PressAsync(Key.Down, cancellationToken: Ct);
