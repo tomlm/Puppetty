@@ -426,3 +426,6 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Puppetty failure artifacts (traces, actual snapshots)
+puppetty-artifacts/

@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Puppetty.NET/Puppetty.NET.csproj" />
+    <Project Path="src/Puppetty/Puppetty.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Puppetty.Samples.XUnit/Puppetty.Samples.XUnit.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Puppetty.Tests/Puppetty.Tests.csproj" />
+    <Project Path="tests/fixtures/Puppetty.Fixture/Puppetty.Fixture.csproj" />
+  </Folder>
+</Solution>
