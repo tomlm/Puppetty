@@ -32,7 +32,7 @@ public sealed class LaunchOptions
 
     /// <summary>
     /// Record a <see cref="Trace"/> of output, input, resizes and settling, for saving and replaying
-    /// (Puppetty.Testing saves it when an assertion fails). Default true.
+    /// (the Expect assertions save it when one fails). Default true.
     /// </summary>
     public bool RecordTrace { get; init; } = true;
 

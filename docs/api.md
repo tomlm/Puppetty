@@ -104,7 +104,7 @@ IReadOnlyList<ScreenMatch> all = ok.Resolve(term.Screen);
 A region or line "matches" when it holds any non-space text; its text is its rows joined with
 `\n`, trailing spaces trimmed.
 
-## Assertions (`Puppetty.Testing`)
+## Assertions (namespace `Puppetty.Testing`)
 
 ```csharp
 using static Puppetty.Testing.Assertions;
@@ -215,6 +215,6 @@ Screen then = loaded.Replay(until: TimeSpan.FromSeconds(1.5));
 Console.WriteLine(loaded.ToTimeline());      // one line per event, escapes shown as \e
 ```
 
-When any `Expect` assertion fails, Puppetty.Testing saves the trace to
+When any `Expect` assertion fails, Puppetty saves the trace to
 `Assertions.ArtifactsDirectory` (`PUPPETTY_ARTIFACTS`, else `./puppetty-artifacts`) and names the
 file in the failure message.

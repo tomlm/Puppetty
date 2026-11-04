@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Puppetty</RootNamespace>
-    <Description>Drive CLI/TUI programs in a real pseudo-terminal from code: type, press keys, wait for the screen, read it back.</Description>
+    <Description>Drive CLI/TUI programs in a real pseudo-terminal from code: type, press keys, click, wait for the screen and read it back. Includes auto-retrying Expect() assertions and golden snapshots for xUnit, NUnit and MSTest.</Description>
   </PropertyGroup>
 
   <ItemGroup>

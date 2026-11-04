@@ -12,6 +12,7 @@
 //               writes each seq as CSI <seq> (e.g. "?1000h"), switches the terminal to raw input,
 //               then prints every input chunk as "got: <text>" with ESC shown as \e; "q" exits
 //   size        prints "size <cols>x<rows>" at start and after each key; "q" exits
+//   env <name>  prints "<name>=<value>" and exits
 
 using System.Runtime.InteropServices;
 using System.Text;
@@ -28,8 +29,15 @@ return args.FirstOrDefault() switch
     "sync" => Sync(),
     "raw" => Raw(args[1..]),
     "size" => Size(),
+    "env" => PrintEnv(args[1]),
     _ => Usage(),
 };
+
+static int PrintEnv(string name)
+{
+    Console.WriteLine($"{name}={Environment.GetEnvironmentVariable(name)}");
+    return 0;
+}
 
 static int Echo()
 {
@@ -155,7 +163,7 @@ static int Size()
 
 static int Usage()
 {
-    Console.Error.WriteLine("usage: Puppetty.Fixture echo | menu | exit <n> | styles | delayed <ms> <text> | sync | raw [seq...]");
+    Console.Error.WriteLine("usage: Puppetty.Fixture echo | menu | exit <n> | styles | delayed <ms> <text> | sync | raw [seq...] | size | env <name>");
     return 2;
 }
 

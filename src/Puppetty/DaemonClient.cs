@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Pipes;
+using CShellNet;
 
 namespace Puppetty.Cli;
 
@@ -55,22 +56,18 @@ internal static class DaemonClient
             args.Add(typeof(DaemonClient).Assembly.Location);
         args.Add("daemon");
 
+        var shell = new CShell { Echo = false };
         if (OperatingSystem.IsWindows())
         {
-            WindowsDetachedProcess.Start(self, args);
+            // Start() goes through ShellExecute, which passes the daemon none of our handles, so a
+            // caller capturing our output (`$(puppetty start ...)`, a test harness) sees end-of-file
+            // when we exit rather than when the daemon does. It gets its own console; keep it hidden.
+            shell.Start(o => o.StartInfo(i => i.WindowStyle = ProcessWindowStyle.Hidden), self, [.. args]);
             return;
         }
 
-        // On Unix .NET marks its descriptors close-on-exec, so redirecting 0-2 is enough to keep the
-        // daemon off the caller's terminal and pipes.
-        var startInfo = new ProcessStartInfo(self, args)
-        {
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the puppetty daemon.");
-        process.StandardInput.Close();
+        // On Unix .NET marks its descriptors close-on-exec, so running it with 0-2 redirected keeps
+        // the daemon off the caller's terminal and pipes.
+        shell.Run(self, [.. args]).StandardInput.Dispose();
     }
 }

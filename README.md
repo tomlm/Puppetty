@@ -1,6 +1,6 @@
 # Puppetty
 
-Playwright for terminals, in .NET. Run any CLI or TUI program in a real pseudo-terminal, emulate
+Cross-platform Playwright for terminals, in .NET. Run any CLI or TUI program in a real pseudo-terminal, emulate
 its screen headlessly, and drive it from tests, scripts or AI agents: type, press keys, click,
 wait for the screen, assert, snapshot and replay.
 
@@ -24,12 +24,10 @@ await Expect(term).ToMatchSnapshotAsync("python-42");
 
 ## Packages
 
-| Project | What it is |
-|---|---|
-| `src/Puppetty.NET` | Core library (package `Puppetty.NET`, namespace `Puppetty`): `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces, sessions. |
-| `src/Puppetty.Testing` | Auto-retrying `Expect(...)` assertions and golden snapshots; works with xUnit, NUnit and MSTest. |
-| `src/Puppetty.Mcp` | MCP server (`puppetty-mcp`) giving AI agents the `terminal_*` tools. |
-| `src/Puppetty` | `puppetty` command-line tool (package `Puppetty`) with daemon-backed sessions and a live `attach` view. |
+| Package | Install | What it is |
+|---|---|---|
+| **Puppetty.NET** (`src/Puppetty.NET`) | `dotnet add package Puppetty.NET` | The library, namespace `Puppetty`: `Terminal`, `Screen`, locators, key/mouse/paste encoding, settling, snapshots, traces. Also auto-retrying `Expect(...)` assertions and golden snapshots (namespace `Puppetty.Testing`) for xUnit, NUnit and MSTest. |
+| **Puppetty** (`src/Puppetty`) | `dotnet tool install -g Puppetty` | The `puppetty` tool: shell commands with daemon-backed sessions and a live `attach` view, and `puppetty mcp`, an MCP server giving AI agents the `terminal_*` tools. |
 
 ## Docs
 

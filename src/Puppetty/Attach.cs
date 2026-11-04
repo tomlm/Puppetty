@@ -5,7 +5,26 @@ internal static class Attach
 {
     private const string Esc = "\u001b";
 
-    public static async Task<int> RunAsync(string id, CancellationToken cancellationToken)
+    public static async Task<int> RunAsync(string id)
+    {
+        using var detach = new CancellationTokenSource();
+        ConsoleCancelEventHandler onCtrlC = (_, e) =>
+        {
+            e.Cancel = true;
+            detach.Cancel();
+        };
+        Console.CancelKeyPress += onCtrlC;
+        try
+        {
+            return await RunAsync(id, detach.Token);
+        }
+        finally
+        {
+            Console.CancelKeyPress -= onCtrlC;
+        }
+    }
+
+    private static async Task<int> RunAsync(string id, CancellationToken cancellationToken)
     {
         await using var pipe = await DaemonClient.ConnectAsync(startIfNeeded: false, cancellationToken);
         if (pipe is null)

@@ -19,7 +19,7 @@ public class McpServerTests
         {
             Name = "puppetty",
             Command = DotNet,
-            Arguments = [Path.Combine(AppContext.BaseDirectory, "Puppetty.Mcp.dll")],
+            Arguments = [Path.Combine(AppContext.BaseDirectory, "Puppetty.dll"), "mcp"],
         }));
     }
 

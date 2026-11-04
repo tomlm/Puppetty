@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Puppetty.Testing\Puppetty.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Puppetty.NET\Puppetty.NET.csproj" />
     <!-- The app under test. A real project would launch its own program instead. -->
     <ProjectReference Include="..\..\tests\fixtures\Puppetty.Fixture\Puppetty.Fixture.csproj" />
   </ItemGroup>

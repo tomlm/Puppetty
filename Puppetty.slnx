@@ -1,8 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Puppetty.NET/Puppetty.NET.csproj" />
-    <Project Path="src/Puppetty.Testing/Puppetty.Testing.csproj" />
-    <Project Path="src/Puppetty.Mcp/Puppetty.Mcp.csproj" />
     <Project Path="src/Puppetty/Puppetty.csproj" />
   </Folder>
   <Folder Name="/samples/">

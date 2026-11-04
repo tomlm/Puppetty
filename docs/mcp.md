@@ -1,28 +1,30 @@
 # Puppetty MCP server
 
-`Puppetty.Mcp` is a stdio MCP server that lets an agent run CLI and TUI programs in a real
-pseudo-terminal: launch, type, press keys, click, wait, and read the screen.
+`puppetty mcp` runs a stdio MCP server that lets an agent run CLI and TUI programs in a real
+pseudo-terminal: launch, type, press keys, click, wait, and read the screen. It is part of the
+`puppetty` tool (the `Puppetty` package).
 
 ## Set up in Claude Code
 
-From a clone of this repo:
+Once the tool is installed (`dotnet tool install -g Puppetty`):
 
 ```sh
-dotnet build src/Puppetty.Mcp -c Release
-claude mcp add puppetty -- dotnet "<repo>/src/Puppetty.Mcp/bin/Release/net10.0/Puppetty.Mcp.dll"
+claude mcp add puppetty -- puppetty mcp
 ```
 
-Or, once the `Puppetty.Mcp` tool package is installed (`dotnet tool install -g Puppetty.Mcp`):
+Or from a clone of this repo:
 
 ```sh
-claude mcp add puppetty -- puppetty-mcp
+dotnet build src/Puppetty -c Release
+claude mcp add puppetty -- dotnet "<repo>/src/Puppetty/bin/Release/net10.0/Puppetty.dll" mcp
 ```
 
 Add `--scope project` to share the server with everyone working in a repository (it is written
 to `.mcp.json`). Check it with `claude mcp list`, or `/mcp` inside Claude Code.
 
-Any other MCP client works the same way: the command is `dotnet <path>/Puppetty.Mcp.dll` (or
-`puppetty-mcp`) with no arguments, speaking MCP over stdin/stdout. Logs go to stderr.
+Any other MCP client works the same way: the command is `puppetty mcp` (or
+`dotnet <path>/Puppetty.dll mcp`), speaking MCP over stdin/stdout. Logs go to stderr. The server's
+sessions belong to it and end when it exits; they are separate from the CLI daemon's.
 
 ## Tools
 

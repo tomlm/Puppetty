@@ -3,15 +3,17 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <RootNamespace>Puppetty.Cli</RootNamespace>
-    <Description>Command-line driver for CLI/TUI programs in a real terminal, with sessions kept alive by a background daemon.</Description>
+    <Description>The puppetty tool: drive CLI/TUI programs in a real terminal from the shell, with sessions kept alive by a background daemon, and `puppetty mcp`, an MCP server that lets AI agents do the same.</Description>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>puppetty</ToolCommandName>
-    <!-- An app, not a library. -->
+    <!-- An app, not a library: the MCP tools' [Description] attributes are their documentation. -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.11" />
+    <PackageReference Include="CShell" Version="3.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+    <PackageReference Include="ModelContextProtocol" Version="2.3.0" />
   </ItemGroup>
 
   <ItemGroup>
