@@ -54,4 +54,8 @@
     <ProjectReference Include="..\Puppetty.NET\Puppetty.NET.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Puppetty.Tests" />
+  </ItemGroup>
+
 </Project>

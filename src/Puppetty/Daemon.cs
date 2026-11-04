@@ -24,7 +24,7 @@ internal sealed class Daemon
     {
         // One daemon per pipe name. Two clients racing to auto-start could otherwise both succeed,
         // and on Windows both would serve the same pipe name with different sessions.
-        using var single = new Mutex(initiallyOwned: false, $"puppetty-daemon-{Protocol.PipeName}");
+        using var single = new Mutex(initiallyOwned: false, $"puppetty-daemon-{Protocol.Name}");
         try
         {
             if (!single.WaitOne(0))
