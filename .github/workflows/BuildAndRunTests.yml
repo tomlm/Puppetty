@@ -8,30 +8,68 @@ on:
     paths:
     - src/**
     - tests/**
+    - samples/**
+    - Directory.Build.props
+    - Puppetty.slnx
+    - .github/workflows/BuildAndRunTests.yml
   pull_request:
     branches: [ "main" ]
     paths:
     - src/**
     - tests/**
-    
+    - samples/**
+    - Directory.Build.props
+    - Puppetty.slnx
+    - .github/workflows/BuildAndRunTests.yml
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      # Traces and actual snapshots written by failing assertions land here.
+      PUPPETTY_ARTIFACTS: ${{ github.workspace }}/puppetty-artifacts
 
     steps:
-    - name: Checkout Puppetty.slnx
+    - name: Checkout
       uses: actions/checkout@v4
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
+
+    # Real programs for the end-to-end and smoke tests. Tests skip themselves when one is missing.
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install vim, less, htop (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y vim less htop
+
+    # vim and less come with macOS.
+    - name: Install htop (macOS)
+      if: runner.os == 'macOS'
+      run: brew install htop
 
     - name: Restore dependencies
       run: dotnet restore Puppetty.slnx
 
     - name: Build
-      run: dotnet build --no-restore Puppetty.slnx --property WarningLevel=0
-      
+      run: dotnet build --no-restore Puppetty.slnx -c Release
+
     - name: Test
-      run: dotnet test --no-build --verbosity normal Puppetty.slnx
+      run: dotnet test --no-build Puppetty.slnx -c Release --logger "console;verbosity=normal"
+
+    - name: Upload failure artifacts
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: puppetty-artifacts-${{ matrix.os }}
+        path: puppetty-artifacts
+        if-no-files-found: ignore

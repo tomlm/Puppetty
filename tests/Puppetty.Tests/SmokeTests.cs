@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using static Puppetty.Testing.Assertions;
 
 namespace Puppetty.Tests;
@@ -60,8 +61,9 @@ public class SmokeTests
         var htop = Programs.Find("htop");
         var top = htop ?? Require("top");
         await using var term = await Terminal.LaunchAsync(top, new LaunchOptions { Cols = 120, Rows = 30 });
-        // htop draws a function-key bar; top a load-average summary.
-        await Expect(term.GetByText(htop is not null ? "Quit" : "load average")).ToBeVisibleAsync();
+        // htop draws a function-key bar; top a load-average summary ("load average" on Linux,
+        // "Load Avg" on macOS).
+        await Expect(htop is not null ? term.GetByText("Quit") : term.GetByText(new Regex("load av", RegexOptions.IgnoreCase))).ToBeVisibleAsync();
 
         await term.PressAsync(htop is not null ? "F10" : "q");
         Assert.That(await term.WaitForExitAsync(), Is.EqualTo(0));
